@@ -11,7 +11,7 @@ export const PALETTE = {
 
 export type Mode = "dark" | "light";
 
-/** Palette is fixed; only the roles swap between modes. */
+// theme roles
 export const THEMES: Record<Mode, Record<string, string>> = {
   dark: {
     "--bg": PALETTE.ink,
@@ -22,7 +22,7 @@ export const THEMES: Record<Mode, Record<string, string>> = {
     "--line": PALETTE.cream,
     "--dot": "rgba(239,184,198,0.18)",
     "--shadow": PALETTE.pink,
-    "--accent-text": "#FF4D94", // small pink text, AA on ink
+    "--accent-text": "#FF4D94",
   },
   light: {
     "--bg": PALETTE.cream,
@@ -33,7 +33,7 @@ export const THEMES: Record<Mode, Record<string, string>> = {
     "--line": PALETTE.ink,
     "--dot": "rgba(74,33,76,0.16)",
     "--shadow": PALETTE.berry,
-    "--accent-text": "#C8075A", // small pink text, AA on cream/blush
+    "--accent-text": "#C8075A",
   },
 };
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Anton, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-/* Type system: Anton (display) / Space Grotesk (UI + body) / JetBrains Mono (labels). */
+// fonts
 const fontBody = Space_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],

@@ -8,13 +8,10 @@ import "lenis/dist/lenis.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Moves immediately, then settles softly. */
+// ease-out quart
 export const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
 
-/**
- * Smooth wheel scrolling, driven by GSAP's ticker so it stays in step with ScrollTrigger.
- * The ref stays null until mounted, and always with reduced motion (native scrolling).
- */
+// Lenis smooth scroll (null with reduced motion)
 export function useSmoothScroll(): RefObject<Lenis | null> {
   const ref = useRef<Lenis | null>(null);
 

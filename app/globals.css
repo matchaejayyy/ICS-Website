@@ -4,7 +4,7 @@
   --font-sans: var(--font-body);
 }
 
-/* Matches the hero so overscroll never flashes white. */
+/* dark base */
 html {
   background: #171024;
   color-scheme: dark;
@@ -28,14 +28,14 @@ body {
   }
 }
 
-/* Lock scroll under the preloader. Done in CSS so it already holds before hydration. */
+/* preloader scroll lock */
 @media (prefers-reduced-motion: no-preference) {
   html:has(.preloader) {
     overflow: hidden;
   }
 }
 
-/* The preloader still mounts with reduced motion, it just never shows. */
+/* reduced motion: hide preloader */
 @media (prefers-reduced-motion: reduce) {
   .preloader { display: none; }
 }
@@ -44,9 +44,7 @@ body {
 @keyframes caret-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
 
-/* Buttons with a cut corner and a hard offset shadow. The corner is a gradient rather
-   than clip-path so drop-shadow follows the cut. GSAP animates the outer element on
-   load, so all visuals and hover motion live on .ics-cta__face. */
+/* CTA buttons */
 .ics-cta {
   --cut: 10px;
   --shade: #A82D65;
@@ -73,7 +71,7 @@ body {
   background: linear-gradient(225deg, transparent var(--cut), #EC0867 calc(var(--cut) + .5px));
 }
 
-/* Ghost: an off-white outer shape over a dark inner fill, with a magenta wipe on hover. */
+/* ghost variant */
 .ics-cta--ghost .ics-cta__face {
   background: linear-gradient(225deg, transparent var(--cut), #FFF6EF calc(var(--cut) + .5px));
   filter: none;
@@ -102,7 +100,7 @@ body {
 .ics-cta:focus-visible { outline: 2px solid #FFF6EF; outline-offset: 6px; }
 .ics-cta--ghost:focus-visible .ics-cta__face::after { clip-path: inset(0 0 0 0); }
 
-/* Pressing sinks the button into its shadow, which also gives touch feedback. */
+/* pressed */
 .ics-cta:active .ics-cta__face { transform: translate(3px, 3px); filter: drop-shadow(1px 1px 0 var(--shade)); }
 .ics-cta--ghost:active .ics-cta__face { filter: none; }
 .ics-cta--ghost:active .ics-cta__face::after { clip-path: inset(0 0 0 0); }
@@ -111,7 +109,7 @@ body {
   .ics-cta__face, .ics-cta__icon, .ics-cta--ghost .ics-cta__face::after { transition: none; }
 }
 
-/* Page transitions for React's <ViewTransition>. The header stays put so only the content moves. */
+/* page transitions */
 ::view-transition {
   pointer-events: none;
 }
@@ -156,7 +154,7 @@ body {
   }
 }
 
-/* JetBrains Mono's code ligatures turn "//" and "=>" into glyphs; keep them literal. */
+/* no code ligatures */
 [class*="var(--font-mono)"] {
   font-variant-ligatures: none;
   font-feature-settings: "calt" 0, "liga" 0;

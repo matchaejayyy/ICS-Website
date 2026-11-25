@@ -2,7 +2,7 @@
 
 import { useEffect, type RefObject } from "react";
 
-/** Sets `data-scrolled` on the element; the two thresholds keep it from flickering near the top. */
+// data-scrolled flag
 export function useScrolledFlag(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current;

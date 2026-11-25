@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   useSyncExternalStore,
@@ -12,32 +13,35 @@ import {
 import { flushSync } from "react-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
-import { ArrowDown, ArrowUpRight, Moon, Sun } from "lucide-react";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
 
-import { useSmoothScroll } from "./components/useSmoothScroll";
-import { useScrolledFlag } from "./components/useScrolledFlag";
+import Navbar from "./components/navbar";
 import Preloader, { EXIT } from "./components/Preloader";
+import { easeOutQuart, useSmoothScroll } from "./components/useSmoothScroll";
 import { hasBooted, markBooted } from "./components/site-boot";
 import { THEMES, type Mode } from "./components/ui";
-import { LINKS, ORG } from "./data/org";
+import { LINKS, NAV, ORG } from "./data/org";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger, ScrollToPlugin);
 ScrollTrigger.config({ ignoreMobileResize: true });
+
+const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
 
 const HERO_MASCOT = {
   src: "/comp_stud.png",
   alt: "Computah Cat, the society mascot: a TV-headed character with an orange cat resting on top",
 };
 
-// Heading lines: everything before the last two words, then one word per line.
+// heading lines
 const HERO_LINES = (() => {
   const w = ORG.name.trim().split(/\s+/);
   if (w.length < 3) return [ORG.name, "", ""];
   return [w.slice(0, -2).join(" "), w[w.length - 2], w[w.length - 1]];
 })();
 
-// Pink hero shapes as polygon points in %. The preloader morphs into whichever one is visible.
+// preloader morph targets (polygon %)
 const PANEL_SHAPE = "0 0, 100 0, 100 100, 0 100"; // desktop
 const BAND_SHAPE = "0 16, 100 0, 100 84, 0 100"; // mobile
 const polygon = (shape: string) =>
@@ -52,11 +56,10 @@ const PARTICLES: [string, string, number][] = [
   ["18%", "62%", 5], ["64%", "84%", 6], ["86%", "70%", 4], ["44%", "92%", 4],
 ];
 
-// The theme lives in localStorage. Reading it through useSyncExternalStore keeps the
-// server render (always dark) from clashing with the saved choice during hydration.
+// theme store
 const THEME_KEY = "persona-theme";
 const themeListeners = new Set<() => void>();
-let memoryMode: Mode | null = null; // used when storage is unavailable
+let memoryMode: Mode | null = null; // storage fallback
 const readMode = (): Mode => {
   if (memoryMode) return memoryMode;
   try {
@@ -70,7 +73,7 @@ const writeMode = (next: Mode) => {
   try {
     localStorage.setItem(THEME_KEY, next);
   } catch {
-    // memoryMode still applies for this visit
+    // storage unavailable
   }
   themeListeners.forEach((l) => l());
 };
@@ -81,7 +84,7 @@ const subscribeMode = (l: () => void) => {
   };
 };
 
-// Mouse parallax moves the outer div; the idle float moves the inner one.
+// hero pin
 function HeroPin({ src, tilt, className = "" }: { src: string; tilt: string; className?: string }) {
   return (
     <div className={`hero-depth hero-chip pointer-events-none absolute z-10 ${className}`} data-depth="16">
@@ -100,10 +103,9 @@ function HeroPin({ src, tilt, className = "" }: { src: string; tilt: string; cla
 }
 
 export default function Page() {
-  // Skip the preloader on client-side navigation back here. With reduced motion it is
-  // hidden by CSS but still mounts, and hands over as soon as the page has loaded.
   const [loaded, setLoaded] = useState(hasBooted);
   const [preloaderGone, setPreloaderGone] = useState(hasBooted);
+  const [active, setActive] = useState<string>("home");
   const mode = useSyncExternalStore(subscribeMode, readMode, () => "dark" as Mode);
 
   const lenisRef = useSmoothScroll();
@@ -111,10 +113,13 @@ export default function Page() {
   const rootRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const heroTlRef = useRef<gsap.core.Timeline | null>(null);
+  const scrollLockRef = useRef(false);
+  const scrollTokenRef = useRef(0);
+  const syncActiveRef = useRef<() => void>(() => {});
 
   useEffect(markBooted, []);
 
-  // Mouse parallax, off on touch, small screens and reduced motion.
+  // hero mouse parallax
   useEffect(() => {
     const hero = rootRef.current?.querySelector<HTMLElement>("#home");
     const off = window.matchMedia(
@@ -154,7 +159,7 @@ export default function Page() {
     };
   }, []);
 
-  // Native scroll is locked in CSS while the preloader is up; Lenis has to be paused separately.
+  // preloader hand-off
   useEffect(() => {
     if (!loaded) {
       const lenis = lenisRef.current;
@@ -167,13 +172,77 @@ export default function Page() {
     heroTlRef.current?.play(0);
   }, [loaded, lenisRef]);
 
+  const scrollToSection = (id: string, updateHistory = true) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    if (updateHistory && window.location.hash !== `#${id}`) {
+      History.prototype.replaceState.call(window.history, window.history.state, "", `#${id}`);
+    }
+
+    const offset = headerRef.current?.getBoundingClientRect().height ?? 0;
+    const top = Math.max(target.getBoundingClientRect().top + window.scrollY - offset, 0);
+    gsap.killTweensOf(window, "scrollTo");
+
+    // scroll-spy lock
+    const token = ++scrollTokenRef.current;
+    const release = () => {
+      if (scrollTokenRef.current !== token) return;
+      scrollLockRef.current = false;
+      syncActiveRef.current();
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      window.scrollTo(0, top);
+      scrollLockRef.current = false;
+      return;
+    }
+
+    scrollLockRef.current = true;
+    const distance = Math.abs(top - window.scrollY);
+    const duration = gsap.utils.clamp(0.6, 1.2, 0.5 + distance / 4000);
+
+    const lenis = lenisRef.current;
+    if (lenis) {
+      const onWheel = () => stop();
+      const onKey = (e: KeyboardEvent) => {
+        if (SCROLL_KEYS.has(e.key)) stop();
+      };
+      const stop = () => {
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchstart", onWheel);
+        window.removeEventListener("keydown", onKey);
+        release();
+      };
+      window.addEventListener("wheel", onWheel, { passive: true });
+      window.addEventListener("touchstart", onWheel, { passive: true });
+      window.addEventListener("keydown", onKey);
+      lenis.scrollTo(top, { duration, easing: easeOutQuart, lock: false, onComplete: stop });
+      return;
+    }
+
+    gsap.to(window, {
+      duration,
+      scrollTo: { y: top, autoKill: true, onAutoKill: release },
+      ease: "power3.out",
+      overwrite: "auto",
+      onComplete: release,
+      onInterrupt: release,
+    });
+  };
+
+  const go = (id: string) => {
+    setActive(id);
+    scrollToSection(id);
+  };
+
   const { contextSafe } = useGSAP(
     (_ctx, safe) => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
       const small = window.matchMedia("(max-width: 767px)").matches;
 
-      // Idle loops, paused while the hero is off screen.
+      // idle loops
       const loops: gsap.core.Animation[] = [];
 
       const startMascotLoop = safe!(() => {
@@ -211,9 +280,7 @@ export default function Page() {
         );
       });
 
-      // On a fresh visit this runs alongside the preloader's exit: the copy appears as the
-      // backdrop uncovers it, and the art inside the pink shape once the morph lands
-      // (EXIT.morph). Without the preloader the same sequence just starts sooner.
+      // hero intro
       const intro = !!document.querySelector(".preloader");
       const at = (t: number) => (intro ? t : Math.max(0, t - 0.35));
       const heroTimeline = gsap
@@ -221,6 +288,7 @@ export default function Page() {
         .add(startAmbientLoops, 0);
       if (intro) {
         heroTimeline
+          .from(".rail-item", { x: -12, opacity: 0, duration: 0.6, stagger: 0.05 }, 0.2)
           .from(
             ".nav-actions > *",
             { y: -8, opacity: 0, duration: 0.5, stagger: 0.06, clearProps: "transform,opacity" },
@@ -253,17 +321,6 @@ export default function Page() {
         onToggle: (self) => loops.forEach((t) => (self.isActive ? t.resume() : t.pause())),
       });
 
-      gsap.to(".scroll-progress", {
-        scaleX: 1,
-        ease: "none",
-        scrollTrigger: {
-          trigger: document.documentElement,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.3,
-        },
-      });
-
       const hero = { trigger: "#home", start: "top top", end: "bottom top", scrub: true };
       if (!small) {
         gsap.to(".hero-copy", { y: -20, ease: "none", scrollTrigger: hero });
@@ -275,13 +332,6 @@ export default function Page() {
     { scope: rootRef }
   );
 
-  const spinThemeIcon = contextSafe(() => {
-    gsap.fromTo(
-      ".theme-icon",
-      { rotation: -90, scale: 0.6 },
-      { rotation: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }
-    );
-  });
   const mascotIn = contextSafe(() => {
     gsap.to(".mascot-enter", { scale: 1.03, duration: 0.4, ease: "power2.out", overwrite: "auto" });
   });
@@ -296,17 +346,80 @@ export default function Page() {
     );
   });
 
-  const toggleMode = () => {
-    writeMode(mode === "dark" ? "light" : "dark");
-    spinThemeIcon();
-  };
+  const restoreSection = useEffectEvent(() => {
+    let id = "home";
+    try {
+      id = decodeURIComponent(window.location.hash.slice(1)) || "home";
+    } catch {
+      return; // malformed hash
+    }
+    if (!NAV.some((section) => section.id === id)) return;
+    setActive(id);
+    scrollToSection(id, false);
+  });
 
-  const goHome = () => {
-    if (lenisRef.current) lenisRef.current.scrollTo(0, { duration: 0.8 });
-    else window.scrollTo({ top: 0 });
-  };
+  // hash restore
+  useEffect(() => {
+    if (!loaded) return;
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
 
-  useScrolledFlag(headerRef);
+    const onPopState = () => restoreSection();
+    if (window.location.hash) requestAnimationFrame(() => restoreSection());
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.history.scrollRestoration = previousRestoration;
+    };
+  }, [loaded]);
+
+  // scroll-spy
+  useEffect(() => {
+    const sections = NAV.map(({ id }) => document.getElementById(id));
+    // last existing section
+    const last = sections.findLastIndex((el) => el !== null);
+    if (last < 0) return;
+    let lastY = -1;
+    let lastH = -1;
+
+    const compute = () => {
+      const navH = Math.round(headerRef.current?.getBoundingClientRect().height ?? 68);
+      const vh = window.innerHeight;
+      const line = navH + vh * 0.35;
+      const tops = sections.map((el) => (el ? el.getBoundingClientRect().top : Infinity));
+      let i = 0;
+      tops.forEach((top, k) => {
+        if (top <= line) i = k;
+      });
+      const next = tops[i + 1];
+      if (i < last && Number.isFinite(next)) {
+        const span = Math.min(vh * 0.45, next - tops[i]);
+        if (span > 0 && 1 - (next - line) / span >= 0.5) i += 1;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+        i = last;
+      }
+      if (!scrollLockRef.current) setActive(NAV[i].id);
+    };
+    syncActiveRef.current = () => {
+      lastY = -1;
+    };
+
+    const tick = () => {
+      const y = window.scrollY;
+      const h = window.innerHeight;
+      if (y === lastY && h === lastH) return;
+      compute();
+      lastY = y;
+      lastH = h;
+    };
+    gsap.ticker.add(tick);
+
+    return () => {
+      gsap.ticker.remove(tick);
+      syncActiveRef.current = () => {};
+    };
+  }, []);
 
   return (
     <ViewTransition
@@ -333,60 +446,21 @@ export default function Page() {
           Skip to content
         </a>
 
-        <header
-          ref={headerRef}
-          style={{ viewTransitionName: "site-header" }}
-          className="site-nav group/nav sticky top-0 z-50 border-b-2 border-[#FFF6EF]/15 bg-[#171024]/95 text-[#FFF6EF] transition-[background-color,box-shadow,backdrop-filter] duration-300 ease-out data-[scrolled=true]:bg-[#171024]/80 data-[scrolled=true]:shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)] data-[scrolled=true]:backdrop-blur-md data-[scrolled=true]:backdrop-saturate-150"
-        >
-          <nav className="site-container flex h-16 items-center justify-between" aria-label="Primary">
-            <button
-              onClick={goHome}
-              aria-label={`${ORG.handle} home`}
-              className="nav-logo group flex origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
-            >
-              <span className="text-xl sm:text-[1.7rem] font-normal font-[family-name:var(--font-hero)] uppercase tracking-[0.03em] text-[#FFF6EF] transition-opacity duration-200 group-hover:opacity-85">
-                <span className="inline-flex items-center gap-2 sm:gap-3">
-                  <Image
-                    src="/ics-trans-logo.png"
-                    alt=""
-                    width={64}
-                    height={64}
-                    priority
-                    data-morph-logo=""
-                    className="h-8 w-auto sm:h-12 object-contain"
-                  />
-                  <span className="nav-handle">{ORG.handle}</span>
-                </span>
-              </span>
-            </button>
+        <Navbar
+          headerRef={headerRef}
+          lenisRef={lenisRef}
+          active={active}
+          mode={mode}
+          onNavigate={go}
+          onToggleMode={() => writeMode(mode === "dark" ? "light" : "dark")}
+        />
 
-            <div className="nav-actions flex items-center gap-2">
-              <button
-                onClick={toggleMode}
-                aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-                className="grid h-11 w-11 place-items-center text-[#FFF6EF] transition-all duration-200 ease-out hover:bg-[#FFF6EF]/10 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFF6EF]"
-              >
-                <span className="theme-icon inline-flex">
-                  {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-                </span>
-              </button>
-            </div>
-          </nav>
-          <div
-            aria-hidden="true"
-            className="scroll-progress absolute inset-x-0 -bottom-1 h-1 origin-left bg-[#FFF6EF]"
-            style={{ transform: "scaleX(0)" }}
-          />
-        </header>
-
-        <main id="main" tabIndex={-1} className="focus:outline-none">
+        <main id="main" tabIndex={-1} className="focus:outline-none md:pl-14">
           <section
             id="home"
             className="relative overflow-hidden scroll-mt-[4.25rem] bg-[#171024] md:h-[min(calc(100svh-4.25rem),68rem)]"
             style={{
-              // distance from the hero frame's right edge to the viewport's (md and up)
-              "--hero-gutter": "max(2.5rem, calc((100vw - 96rem) / 2))",
-              // grows with the viewport, but never wider than its column or taller than the hero
+              "--hero-gutter": "max(2.5rem, calc((100vw - 3.5rem - 96rem) / 2))",
               "--mascot": "min(clamp(280px, 40vw, 620px), 90%, calc(100svh - 9rem))",
             } as CSSProperties}
           >
@@ -402,7 +476,7 @@ export default function Page() {
               }}
             />
 
-            {/* Content stops at 96rem; backgrounds still run edge to edge. */}
+            {/* hero frame */}
             <div
               className="site-container relative z-10 flex flex-col max-md:gap-5 max-md:px-6 max-md:pb-12 max-md:pt-6 md:grid md:h-full md:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]"
               style={{ maxWidth: "96rem" }}
@@ -462,7 +536,7 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* The pink panel and decor are anchored to the mascot column, not the viewport. */}
+              {/* mascot column */}
               <div className="relative max-md:order-3 md:flex md:h-full md:items-center">
                 <div
                   aria-hidden="true"
@@ -551,7 +625,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Pins sit in the mascot's box so they stay around it at any width. */}
+                  {/* pins */}
                   <HeroPin src="/PIN2.png" tilt="-rotate-6" className="-top-[10%] -left-[4%] hidden lg:block" />
                   <HeroPin src="/MascotPin-Cat.png" tilt="rotate-6" className="left-[78%] top-[6%] hidden lg:block" />
                   <HeroPin src="/MascotPin-Student.png" tilt="rotate-3" className="left-[68%] top-[72%] hidden lg:block" />
