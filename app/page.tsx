@@ -21,7 +21,7 @@ import Navbar from "./components/Navbar";
 import Preloader, { EXIT } from "./components/Preloader";
 import { easeOutQuart, useSmoothScroll } from "./components/useSmoothScroll";
 import { hasBooted, markBooted } from "./components/site-boot";
-import { THEMES, type Mode } from "./components/ui";
+import { HALFTONE, THEMES, type Mode } from "./components/ui";
 import { LINKS, NAV, ORG } from "./data/org";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, ScrollToPlugin);
@@ -42,7 +42,7 @@ const HERO_LINES = (() => {
 })();
 
 // preloader morph targets (polygon %)
-const PANEL_SHAPE = "0 0, 100 0, 100 100, 0 100"; // desktop
+const PANEL_SHAPE = "24 0, 100 0, 100 100, 0 100"; // desktop
 const BAND_SHAPE = "0 16, 100 0, 100 84, 0 100"; // mobile
 const polygon = (shape: string) =>
   `polygon(${shape
@@ -458,10 +458,16 @@ export default function Page() {
         <main id="main" tabIndex={-1} className="focus:outline-none">
           <section
             id="home"
-            className="relative overflow-hidden scroll-mt-[4.25rem] bg-[#171024] md:h-[min(calc(100svh-4.25rem),68rem)]"
+            className="relative overflow-hidden scroll-mt-[4.25rem] bg-[#171024] md:bg-[#0D0A13] md:h-[min(calc(100svh-4.25rem),68rem)]"
             style={{
               "--hero-gutter": "max(2.5rem, calc((100vw - 96rem) / 2))",
               "--mascot": "min(clamp(280px, 40vw, 620px), 90%, calc(100svh - 9rem))",
+              // bg position (higher = further right)
+              "--panel-left": "calc(var(--mascot) * 0.54)",
+              // pink layer only (higher = further right)
+              "--pink-x": "calc(var(--mascot) * 0.08)",
+              // mascot position (higher = further right)
+              "--mascot-x": "calc(var(--mascot) * 0.12)",
             } as CSSProperties}
           >
             <div
@@ -538,15 +544,44 @@ export default function Page() {
 
               {/* mascot column */}
               <div className="relative max-md:order-3 md:flex md:h-full md:items-center">
+                {/* plum field */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 -left-[100vw] right-[calc(100%-var(--panel-left)+var(--mascot)*0.24)] -z-10 hidden md:block"
+                  style={{
+                    clipPath: "polygon(0 0, calc(100% - 11rem) 0, 100% 100%, 0 100%)",
+                    background: "linear-gradient(180deg, #140D1F 0%, #1B1128 100%)",
+                  }}
+                />
+                {/* panel shadow */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-[calc(var(--panel-left)+var(--pink-x)-1.5rem)] right-[calc(-1*var(--hero-gutter))] -z-10 hidden bg-[#171024] md:block"
+                  style={{ clipPath: polygon(PANEL_SHAPE) }}
+                />
                 <div
                   aria-hidden="true"
                   data-morph={PANEL_SHAPE}
-                  className="hero-panel pointer-events-none absolute inset-y-0 left-[calc(var(--mascot)/2)] right-[calc(-1*var(--hero-gutter))] hidden bg-[#EC0867] md:block"
-                />
+                  className="hero-panel pointer-events-none absolute inset-y-0 left-[calc(var(--panel-left)+var(--pink-x))] right-[calc(-1*var(--hero-gutter))] hidden overflow-hidden md:block"
+                  style={{
+                    clipPath: polygon(PANEL_SHAPE),
+                    background: "linear-gradient(160deg, #F2177A 0%, #EC0867 45%, #D3065D 100%)",
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 text-[#A82D65]/45"
+                    style={{
+                      backgroundImage: HALFTONE,
+                      backgroundSize: "14px 14px",
+                      WebkitMaskImage: "linear-gradient(to top left, #000 0%, transparent 40%)",
+                      maskImage: "linear-gradient(to top left, #000 0%, transparent 40%)",
+                    }}
+                  />
+                </div>
 
                 <div aria-hidden="true" className="hero-decor pointer-events-none absolute inset-0 hidden md:block">
                   <div
-                    className="absolute left-[calc(var(--mascot)/2)] top-1/2 size-[64rem] -translate-x-1/2 -translate-y-1/2"
+                    className="absolute left-[calc(var(--mascot)/2+var(--mascot-x))] top-1/2 size-[64rem] -translate-x-1/2 -translate-y-1/2"
                     style={{
                       backgroundImage:
                         "linear-gradient(rgba(23,16,36,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(23,16,36,0.10) 1px, transparent 1px)",
@@ -555,7 +590,7 @@ export default function Page() {
                       maskImage: "radial-gradient(circle, #000 0%, transparent 70%)",
                     }}
                   />
-                  <div className="absolute left-[calc(var(--mascot)/2)] top-1/2 aspect-square w-[calc(var(--mascot)*1.15)] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute left-[calc(var(--mascot)/2+var(--mascot-x))] top-1/2 aspect-square w-[calc(var(--mascot)*1.15)] -translate-x-1/2 -translate-y-1/2">
                     <div
                       className="hero-glow h-full w-full rounded-full opacity-60"
                       style={{ background: "radial-gradient(circle, rgba(255,246,239,0.38), rgba(237,111,120,0.18) 40%, transparent 68%)" }}
@@ -564,22 +599,10 @@ export default function Page() {
                   <div className="absolute -bottom-10 left-0 size-56 rounded-full bg-[#4A214C]/40 blur-3xl" />
 
                   <span
-                    className="hero-depth absolute -top-[2%] -right-[14%] select-none font-[family-name:var(--font-hero)] text-[clamp(8rem,17vw,16rem)] leading-none text-transparent [-webkit-text-stroke:2px_rgba(255,246,239,0.22)]"
-                    data-depth="10"
-                  >
-                    {"</>"}
-                  </span>
-                  <span
                     className="hero-depth absolute bottom-[2%] left-[6%] select-none font-[family-name:var(--font-hero)] text-[clamp(7rem,14vw,13rem)] leading-none text-[#171024]/10"
                     data-depth="6"
                   >
                     {"{}"}
-                  </span>
-                  <span
-                    className="hero-depth absolute -right-[10%] bottom-[3%] select-none font-[family-name:var(--font-hero)] text-[clamp(5rem,10vw,9rem)] leading-none text-transparent [-webkit-text-stroke:2px_rgba(255,246,239,0.2)]"
-                    data-depth="8"
-                  >
-                    01
                   </span>
 
                   {PARTICLES.map(([left, top, s], i) => (
@@ -606,7 +629,7 @@ export default function Page() {
                   onPointerEnter={mascotIn}
                   onPointerLeave={mascotOut}
                   onClick={mascotPop}
-                  className="relative z-0 mx-auto aspect-square w-[min(92%,24rem,32svh)] cursor-pointer md:mx-0 md:w-[var(--mascot)]"
+                  className="relative z-0 mx-auto aspect-square w-[min(92%,24rem,32svh)] cursor-pointer md:mx-0 md:ml-[var(--mascot-x)] md:w-[var(--mascot)]"
                 >
                   <div className="hero-depth h-full w-full" data-depth="7">
                     <div className="mascot-enter relative h-full w-full">
@@ -627,8 +650,8 @@ export default function Page() {
 
                   {/* pins */}
                   <HeroPin src="/PIN2.png" tilt="-rotate-6" className="-top-[10%] -left-[4%] hidden lg:block" />
-                  <HeroPin src="/MascotPin-Cat.png" tilt="rotate-6" className="left-[78%] top-[6%] hidden lg:block" />
-                  <HeroPin src="/MascotPin-Student.png" tilt="rotate-3" className="left-[68%] top-[72%] hidden lg:block" />
+                  <HeroPin src="/MascotPin-Cat.png" tilt="rotate-6" className="left-[69%] top-[6%] hidden lg:block" />
+                  <HeroPin src="/MascotPin-Student.png" tilt="rotate-3" className="left-[62%] top-[72%] hidden lg:block" />
                 </div>
               </div>
 

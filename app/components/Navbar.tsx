@@ -192,7 +192,7 @@ export default function Navbar({
           <button
             onClick={() => go("home")}
             aria-label={`${ORG.handle} home`}
-            className="nav-logo group flex justify-self-start origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
+            className="nav-logo group flex min-h-11 justify-self-start origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
           >
             <span className="inline-flex items-center text-xl leading-none sm:text-[1.7rem] font-normal font-[family-name:var(--font-hero)] uppercase tracking-[0.03em] text-[#FFF6EF] transition-opacity duration-200 group-hover:opacity-85">
               <span className="inline-flex items-center gap-2 leading-none sm:gap-3">
@@ -253,7 +253,7 @@ export default function Navbar({
       <nav
         ref={menuRef}
         id="mobile-menu"
-        className="invisible fixed inset-x-0 bottom-0 top-[4.25rem] z-40 overflow-y-auto bg-[#EC0867] lg:hidden"
+        className="invisible fixed inset-x-0 bottom-0 top-[calc(4rem+2px)] z-40 overflow-y-auto bg-[#EC0867] lg:hidden"
         aria-label="Mobile section navigation"
         aria-hidden={!menuOpen}
       >
