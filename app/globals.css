@@ -1,26 +1,163 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Matches the hero so overscroll never flashes white. */
+html {
+  background: #171024;
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #171024;
+  color: #FFF6EF;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.site-container {
+  width: calc(100% - 2rem);
+  max-width: 105rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .site-container {
+    width: calc(100% - 5rem);
+  }
+}
+
+/* Lock scroll under the preloader. Done in CSS so it already holds before hydration. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.preloader) {
+    overflow: hidden;
+  }
+}
+
+/* The preloader still mounts with reduced motion, it just never shows. */
+@media (prefers-reduced-motion: reduce) {
+  .preloader { display: none; }
+}
+
+.caret { animation: caret-blink 1.1s steps(1) infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+/* Buttons with a cut corner and a hard offset shadow. The corner is a gradient rather
+   than clip-path so drop-shadow follows the cut. GSAP animates the outer element on
+   load, so all visuals and hover motion live on .ics-cta__face. */
+.ics-cta {
+  --cut: 10px;
+  --shade: #A82D65;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  display: block; width: 100%;
+  padding: 0; border: 0; background: none;
+  color: #FFF6EF; text-align: left; text-decoration: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 768px) { .ics-cta { width: auto; min-width: 15.5rem; } }
+
+.ics-cta__face {
+  position: relative; isolation: isolate;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: 3.25rem; padding: 0 1.25rem;
+  font-family: var(--font-hero), Impact, sans-serif;
+  font-size: 1.25rem; line-height: 1; letter-spacing: .04em; text-transform: uppercase;
+  filter: drop-shadow(4px 4px 0 var(--shade));
+  transition: transform .2s var(--ease), filter .2s var(--ease);
+}
+.ics-cta__icon { flex: none; transition: transform .25s var(--ease); }
+
+.ics-cta--solid .ics-cta__face {
+  background: linear-gradient(225deg, transparent var(--cut), #EC0867 calc(var(--cut) + .5px));
+}
+
+/* Ghost: an off-white outer shape over a dark inner fill, with a magenta wipe on hover. */
+.ics-cta--ghost .ics-cta__face {
+  background: linear-gradient(225deg, transparent var(--cut), #FFF6EF calc(var(--cut) + .5px));
+  filter: none;
+}
+.ics-cta--ghost .ics-cta__face::before,
+.ics-cta--ghost .ics-cta__face::after {
+  content: ""; position: absolute; inset: 2px;
+}
+.ics-cta--ghost .ics-cta__face::before {
+  z-index: -2;
+  background: linear-gradient(225deg, transparent calc(var(--cut) - .8px), #171024 calc(var(--cut) - .3px));
+}
+.ics-cta--ghost .ics-cta__face::after {
+  z-index: -1;
+  background: linear-gradient(225deg, transparent calc(var(--cut) - .8px), #EC0867 calc(var(--cut) - .3px));
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path .35s var(--ease);
+}
+
+@media (hover: hover) {
+  .ics-cta:hover .ics-cta__face { transform: translate(-2px, -2px); filter: drop-shadow(6px 6px 0 var(--shade)); }
+  .ics-cta--ghost:hover .ics-cta__face::after { clip-path: inset(0 0 0 0); }
+  .ics-cta--solid:hover .ics-cta__icon { transform: translate(3px, -3px); }
+  .ics-cta--ghost:hover .ics-cta__icon { transform: translateY(3px); }
+}
+.ics-cta:focus-visible { outline: 2px solid #FFF6EF; outline-offset: 6px; }
+.ics-cta--ghost:focus-visible .ics-cta__face::after { clip-path: inset(0 0 0 0); }
+
+/* Pressing sinks the button into its shadow, which also gives touch feedback. */
+.ics-cta:active .ics-cta__face { transform: translate(3px, 3px); filter: drop-shadow(1px 1px 0 var(--shade)); }
+.ics-cta--ghost:active .ics-cta__face { filter: none; }
+.ics-cta--ghost:active .ics-cta__face::after { clip-path: inset(0 0 0 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ics-cta__face, .ics-cta__icon, .ics-cta--ghost .ics-cta__face::after { transition: none; }
+}
+
+/* Page transitions for React's <ViewTransition>. The header stays put so only the content moves. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.nav-forward),
+::view-transition-old(.nav-back) {
+  animation:
+    160ms cubic-bezier(.65, 0, .35, 1) both vt-fade reverse,
+    420ms cubic-bezier(.65, 0, .35, 1) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward),
+::view-transition-new(.nav-back) {
+  animation:
+    240ms cubic-bezier(.22, 1, .36, 1) 140ms both vt-fade,
+    420ms cubic-bezier(.22, 1, .36, 1) both vt-slide;
+}
+::view-transition-old(.nav-forward) { --vt-offset: -60px; }
+::view-transition-new(.nav-forward) { --vt-offset: 60px; }
+::view-transition-old(.nav-back) { --vt-offset: 60px; }
+::view-transition-new(.nav-back) { --vt-offset: -60px; }
+::view-transition-old(.nav-neutral) {
+  animation: 160ms cubic-bezier(.65, 0, .35, 1) both vt-fade reverse;
+}
+::view-transition-new(.nav-neutral) {
+  animation: 240ms cubic-bezier(.22, 1, .36, 1) 100ms both vt-fade;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+
+@keyframes vt-fade { from { opacity: 0; } }
+@keyframes vt-slide { from { translate: var(--vt-offset) 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* JetBrains Mono's code ligatures turn "//" and "=>" into glyphs; keep them literal. */
+[class*="var(--font-mono)"] {
+  font-variant-ligatures: none;
+  font-feature-settings: "calt" 0, "liga" 0;
 }
