@@ -17,7 +17,7 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 
-import Navbar from "./components/navbar";
+import Navbar from "./components/Navbar";
 import Preloader, { EXIT } from "./components/Preloader";
 import { easeOutQuart, useSmoothScroll } from "./components/useSmoothScroll";
 import { hasBooted, markBooted } from "./components/site-boot";
@@ -115,7 +115,7 @@ export default function Page() {
   const heroTlRef = useRef<gsap.core.Timeline | null>(null);
   const scrollLockRef = useRef(false);
   const scrollTokenRef = useRef(0);
-  const syncActiveRef = useRef<() => void>(() => {});
+  const syncActiveRef = useRef<() => void>(() => { });
 
   useEffect(markBooted, []);
 
@@ -288,7 +288,7 @@ export default function Page() {
         .add(startAmbientLoops, 0);
       if (intro) {
         heroTimeline
-          .from(".rail-item", { x: -12, opacity: 0, duration: 0.6, stagger: 0.05 }, 0.2)
+          .from(".nav-item", { y: -8, opacity: 0, duration: 0.5, stagger: 0.05, clearProps: "transform,opacity" }, 0.3)
           .from(
             ".nav-actions > *",
             { y: -8, opacity: 0, duration: 0.5, stagger: 0.06, clearProps: "transform,opacity" },
@@ -417,7 +417,7 @@ export default function Page() {
 
     return () => {
       gsap.ticker.remove(tick);
-      syncActiveRef.current = () => {};
+      syncActiveRef.current = () => { };
     };
   }, []);
 
@@ -455,12 +455,12 @@ export default function Page() {
           onToggleMode={() => writeMode(mode === "dark" ? "light" : "dark")}
         />
 
-        <main id="main" tabIndex={-1} className="focus:outline-none md:pl-14">
+        <main id="main" tabIndex={-1} className="focus:outline-none">
           <section
             id="home"
             className="relative overflow-hidden scroll-mt-[4.25rem] bg-[#171024] md:h-[min(calc(100svh-4.25rem),68rem)]"
             style={{
-              "--hero-gutter": "max(2.5rem, calc((100vw - 3.5rem - 96rem) / 2))",
+              "--hero-gutter": "max(2.5rem, calc((100vw - 96rem) / 2))",
               "--mascot": "min(clamp(280px, 40vw, 620px), 90%, calc(100svh - 9rem))",
             } as CSSProperties}
           >

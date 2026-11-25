@@ -14,37 +14,30 @@ import { NAV, ORG } from "../data/org";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-// desktop section rail
-function RailNav({ active, go }: { active: string; go: (id: string) => void }) {
+// desktop section links
+function NavLinks({ active, go }: { active: string; go: (id: string) => void }) {
   return (
-    <nav
-      aria-label="Sections"
-      className="fixed bottom-0 left-0 top-[4.25rem] z-40 hidden w-14 flex-col items-center justify-between border-r border-[#FFF6EF]/15 bg-[#171024] py-6 text-[#FFF6EF] md:flex"
-    >
-      <ul className="flex flex-col gap-6">
-        {NAV.map((n) => {
-          const on = active === n.id;
-          return (
-            <li key={n.id} className="rail-item relative">
-              <button
-                onClick={() => go(n.id)}
-                aria-current={on ? "location" : undefined}
-                className={`rotate-180 py-1 font-[family-name:var(--font-mono)] text-[12px] font-medium uppercase tracking-[0.25em] transition-colors [writing-mode:vertical-rl] hover:text-[var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#EC0867] ${on ? "text-[#FFF6EF]" : "text-[#FFF6EF]/50"}`}
-              >
-                {n.label}
-              </button>
-              <span
-                aria-hidden="true"
-                className={`absolute -left-3 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[#EC0867] transition-transform duration-300 ${on ? "scale-100" : "scale-0"}`}
-              />
-            </li>
-          );
-        })}
-      </ul>
-      <span className="rotate-180 font-[family-name:var(--font-mono)] text-[12px] tracking-[0.25em] text-[#FFF6EF]/50 [writing-mode:vertical-rl]">
-        {ORG.term}
-      </span>
-    </nav>
+    <ul className="hidden items-center gap-8 md:flex">
+      {NAV.map((n) => {
+        const on = active === n.id;
+        return (
+          <li key={n.id} className="nav-item relative">
+            <button
+              onClick={() => go(n.id)}
+              aria-current={on ? "location" : undefined}
+              className={`py-2 font-[family-name:var(--font-mono)] text-[12px] font-medium uppercase tracking-[0.25em] transition-colors hover:text-[var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#EC0867] ${on ? "text-[#FFF6EF]" : "text-[#FFF6EF]/50"}`}
+            >
+              {/* trailing letter-spacing offset, so the dot centers on the text */}
+              <span className="-mr-[0.25em]">{n.label}</span>
+            </button>
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#EC0867] transition-transform duration-300 ${on ? "scale-100" : "scale-0"}`}
+            />
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -192,11 +185,11 @@ export default function Navbar({
         style={{ viewTransitionName: "site-header" }}
         className="site-nav group/nav sticky top-0 z-50 border-b-2 border-[#FFF6EF]/15 bg-[#171024]/95 text-[#FFF6EF] transition-[background-color,box-shadow,backdrop-filter] duration-300 ease-out data-[scrolled=true]:bg-[#171024]/80 data-[scrolled=true]:shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)] data-[scrolled=true]:backdrop-blur-md data-[scrolled=true]:backdrop-saturate-150"
       >
-        <nav className="site-container flex h-16 items-center justify-between" aria-label="Primary">
+        <nav className="site-container grid h-16 grid-cols-[1fr_auto_1fr] items-center" aria-label="Primary">
           <button
             onClick={() => go("home")}
             aria-label={`${ORG.handle} home`}
-            className="nav-logo group flex origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
+            className="nav-logo group flex justify-self-start origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
           >
             <span className="text-xl sm:text-[1.7rem] font-normal font-[family-name:var(--font-hero)] uppercase tracking-[0.03em] text-[#FFF6EF] transition-opacity duration-200 group-hover:opacity-85">
               <span className="inline-flex items-center gap-2 sm:gap-3">
@@ -214,7 +207,9 @@ export default function Navbar({
             </span>
           </button>
 
-          <div className="nav-actions flex items-center gap-2">
+          <NavLinks active={active} go={go} />
+
+          <div className="nav-actions flex items-center gap-2 justify-self-end">
             <button
               onClick={toggleMode}
               aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
@@ -242,8 +237,6 @@ export default function Navbar({
           style={{ transform: "scaleX(0)" }}
         />
       </header>
-
-      <RailNav active={active} go={go} />
 
       {/* mobile menu */}
       <div
