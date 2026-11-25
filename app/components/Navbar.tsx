@@ -6,33 +6,36 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import type Lenis from "lenis";
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
 
 import { useScrolledFlag } from "./useScrolledFlag";
 import { HALFTONE, type Mode } from "./ui";
-import { NAV, ORG } from "../data/org";
+import { LINKS, NAV, ORG } from "../data/org";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // desktop section links
 function NavLinks({ active, go }: { active: string; go: (id: string) => void }) {
   return (
-    <ul className="hidden items-center gap-8 md:flex">
+    <ul className="hidden items-center gap-8 lg:flex">
       {NAV.map((n) => {
         const on = active === n.id;
         return (
           <li key={n.id} className="nav-item relative">
-            <button
-              onClick={() => go(n.id)}
+            <a
+              href={`#${n.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                go(n.id);
+              }}
               aria-current={on ? "location" : undefined}
-              className={`py-2 font-[family-name:var(--font-mono)] text-[12px] font-medium uppercase tracking-[0.25em] transition-colors hover:text-[var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#EC0867] ${on ? "text-[#FFF6EF]" : "text-[#FFF6EF]/50"}`}
+              className={`inline-flex min-h-11 items-center font-[family-name:var(--font-mono)] text-[12px] font-medium uppercase tracking-[0.25em] transition-colors hover:text-[var(--accent-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#EC0867] ${on ? "text-[#FFF6EF]" : "text-[#FFF6EF]/50"}`}
             >
-              {/* trailing letter-spacing offset, so the dot centers on the text */}
               <span className="-mr-[0.25em]">{n.label}</span>
-            </button>
+            </a>
             <span
               aria-hidden="true"
-              className={`pointer-events-none absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#EC0867] transition-transform duration-300 ${on ? "scale-100" : "scale-0"}`}
+              className={`pointer-events-none absolute left-1/2 top-[calc(50%+0.75rem)] size-1.5 -translate-x-1/2 rounded-full bg-[#EC0867] transition-transform duration-300 ${on ? "scale-100" : "scale-0"}`}
             />
           </li>
         );
@@ -142,7 +145,7 @@ export default function Navbar({
     const lenis = lenisRef.current;
     lenis?.stop();
 
-    const mq = window.matchMedia("(min-width: 768px)");
+    const mq = window.matchMedia("(min-width: 1024px)");
     const onMq = (e: MediaQueryListEvent) => {
       if (e.matches) setMenuOpen(false);
     };
@@ -185,14 +188,14 @@ export default function Navbar({
         style={{ viewTransitionName: "site-header" }}
         className="site-nav group/nav sticky top-0 z-50 border-b-2 border-[#FFF6EF]/15 bg-[#171024]/95 text-[#FFF6EF] transition-[background-color,box-shadow,backdrop-filter] duration-300 ease-out data-[scrolled=true]:bg-[#171024]/80 data-[scrolled=true]:shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)] data-[scrolled=true]:backdrop-blur-md data-[scrolled=true]:backdrop-saturate-150"
       >
-        <nav className="site-container grid h-16 grid-cols-[1fr_auto_1fr] items-center" aria-label="Primary">
+        <nav className="site-container grid h-16 grid-cols-[1fr_auto] items-center lg:grid-cols-[1fr_auto_1fr]" aria-label="Primary">
           <button
             onClick={() => go("home")}
             aria-label={`${ORG.handle} home`}
             className="nav-logo group flex justify-self-start origin-left items-center gap-2 transition-transform duration-300 ease-out group-data-[scrolled=true]/nav:scale-90 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF6EF]"
           >
-            <span className="text-xl sm:text-[1.7rem] font-normal font-[family-name:var(--font-hero)] uppercase tracking-[0.03em] text-[#FFF6EF] transition-opacity duration-200 group-hover:opacity-85">
-              <span className="inline-flex items-center gap-2 sm:gap-3">
+            <span className="inline-flex items-center text-xl leading-none sm:text-[1.7rem] font-normal font-[family-name:var(--font-hero)] uppercase tracking-[0.03em] text-[#FFF6EF] transition-opacity duration-200 group-hover:opacity-85">
+              <span className="inline-flex items-center gap-2 leading-none sm:gap-3">
                 <Image
                   src="/ics-trans-logo.png"
                   alt=""
@@ -219,13 +222,21 @@ export default function Navbar({
                 {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
               </span>
             </button>
+            <a
+              href={LINKS.join}
+              target="_blank"
+              rel="noreferrer"
+              className="hidden min-h-9 items-center gap-2 bg-[#EC0867] px-3 font-[family-name:var(--font-body)] text-xs font-extrabold uppercase tracking-[0.08em] text-[#FFF6EF] transition-colors hover:bg-[#D9075D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFF6EF] sm:inline-flex"
+            >
+              ICSLink <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
             <button
               ref={menuToggleRef}
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
-              className="grid h-11 w-11 place-items-center bg-[#EC0867] text-[#FFF6EF] md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFF6EF]"
+              className="grid h-11 w-11 place-items-center bg-[#EC0867] text-[#FFF6EF] lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFF6EF]"
             >
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -239,10 +250,11 @@ export default function Navbar({
       </header>
 
       {/* mobile menu */}
-      <div
+      <nav
         ref={menuRef}
         id="mobile-menu"
-        className="invisible fixed inset-x-0 bottom-0 top-[4.25rem] z-40 overflow-y-auto bg-[#EC0867] md:hidden"
+        className="invisible fixed inset-x-0 bottom-0 top-[4.25rem] z-40 overflow-y-auto bg-[#EC0867] lg:hidden"
+        aria-label="Mobile section navigation"
         aria-hidden={!menuOpen}
       >
         <div
@@ -253,19 +265,34 @@ export default function Navbar({
         <ul className="relative flex min-h-full flex-col justify-center gap-3 px-5 py-8 sm:gap-4 sm:px-8">
           {NAV.map((n) => (
             <li key={n.id} className="mobile-link">
-              <button
+              <a
+                href={`#${n.id}`}
                 tabIndex={menuOpen ? 0 : -1}
-                onClick={() => go(n.id)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  go(n.id);
+                }}
                 aria-current={active === n.id ? "location" : undefined}
                 className={`flex w-full max-w-sm items-baseline gap-3 px-5 py-3 text-left font-[family-name:var(--font-hero)] text-4xl uppercase text-[#FFF6EF] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFF6EF] ${active === n.id ? "bg-[#171024]" : "bg-[#171024]/85"}`}
               >
                 <span aria-hidden="true" className="text-[#EC0867]">{"{"}</span>
                 {n.label}
-              </button>
+              </a>
             </li>
           ))}
+          <li className="mobile-link">
+            <a
+              href={LINKS.join}
+              target="_blank"
+              rel="noreferrer"
+              tabIndex={menuOpen ? 0 : -1}
+              className="inline-flex min-h-11 items-center gap-3 bg-[#171024] px-5 py-3 font-[family-name:var(--font-body)] text-sm font-extrabold uppercase tracking-[0.08em] text-[#FFF6EF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFF6EF]"
+            >
+              ICSLink <ArrowUpRight size={20} aria-hidden="true" />
+            </a>
+          </li>
         </ul>
-      </div>
+      </nav>
     </>
   );
 }

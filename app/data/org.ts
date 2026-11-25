@@ -11,6 +11,10 @@ export const ORG = {
 
 export const NAV = [
   { id: "home", label: "Home" },
+  { id: "about", label: "About" },
+  { id: "showcase", label: "Showcase" },
+  { id: "officers", label: "Officers" },
+  { id: "contact", label: "Contact" },
 ] as const;
 
 export const LINKS = {
